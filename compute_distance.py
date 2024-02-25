@@ -1,6 +1,8 @@
+import skfmm
 from skimage.io import imread
 from skimage.morphology import medial_axis
 from pathlib import Path
+import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
@@ -21,9 +23,8 @@ if __name__ == '__main__':
     i = int(sys.argv[2])
     j = int(sys.argv[3])
 
-    start = blob.copy()
-    start.fill(1)
-    start[i, j] = 0
+    start = np.full_like(blob, 1, dtype=float)
+    start[i, j] = -1
 
     fig = plt.figure()
     axs = fig.subplots(1, 2)
@@ -33,8 +34,12 @@ if __name__ == '__main__':
     axs[0].axis('off')
     axs[0].set_title('Original')
 
-    # Use the medial axis function to find the distance transform
-    medial_axis, distance = medial_axis(start, blob, return_distance=True)
+    # Mask the start array with the blob array
+    mask = np.logical_not(blob)
+    phi = np.ma.masked_array(start, mask)
+
+    # Compute distance from (i, j) within the blob using the fast marching method
+    distance = skfmm.distance(phi, dx=1)
     
     # Display the distance transform
     axs[1].imshow(distance, cmap='inferno')

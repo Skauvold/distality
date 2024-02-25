@@ -1,4 +1,4 @@
-### Computing relative intra-body location parameters
+# Computing relative intra-body location parameters
 
 Suppose we have a shape (polygon) with a backbone through it. The
 backbone is roughly a smoothed non-branching subset of the medial
@@ -16,3 +16,13 @@ parameters:
 
 - Distality: $d_P / (d_P + d_D)$
 - Peripherality: $d_B / (d_B + d_E)$
+
+## Fast Marching Method
+
+- [scikit-fmm](https://github.com/scikit-fmm/scikit-fmm?tab=readme-ov-file)
+
+### Example
+
+`python .\compute_distance.py .\data\05_bend.png 30 30`
+
+![Output image](/output/fmmtest.png)
