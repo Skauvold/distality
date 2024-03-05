@@ -23,6 +23,10 @@ parameters:
 
 ### Example
 
+`python .\compute_parameters.py .\data\05_bend.png`
+
+![Output image](/images/output_img_2x2.png)
+
 `python .\compute_distance.py .\data\05_bend.png 30 30`
 
-![Output image](/output/fmmtest.png)
+![Output image](/images/fmmtest.png)
