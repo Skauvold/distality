@@ -6,12 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Get path and coordinates from command line argument
     if len(sys.argv) < 4:
         print("Usage: python compute_parameters.py <path_to_image> <i> <j>")
         sys.exit(1)
-    
+
     # Read the image
     path_string = sys.argv[1]
     path_to_image = Path(path_string)
@@ -30,9 +30,9 @@ if __name__ == '__main__':
     axs = fig.subplots(1, 2)
 
     # Display the image
-    axs[0].imshow(original, cmap='gray')
-    axs[0].axis('off')
-    axs[0].set_title('Original')
+    axs[0].imshow(original, cmap="gray")
+    axs[0].axis("off")
+    axs[0].set_title("Original")
 
     # Mask the start array with the blob array
     mask = np.logical_not(blob)
@@ -40,11 +40,11 @@ if __name__ == '__main__':
 
     # Compute distance from (i, j) within the blob using the fast marching method
     distance = skfmm.distance(phi, dx=1)
-    
+
     # Display the distance transform
-    axs[1].imshow(distance, cmap='inferno')
-    axs[1].axis('off')
-    axs[1].set_title('Distance transform')
+    axs[1].imshow(distance, cmap="inferno")
+    axs[1].axis("off")
+    axs[1].set_title("Distance transform")
 
     plt.show()
     sys.exit(0)

@@ -3,8 +3,7 @@
 import numpy as np
 
 from skimage.morphology import medial_axis
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import shortest_path
+from networkx import all_pairs_shortest_path_length, Graph
 
 
 def extract_foreground_ij(image):
@@ -36,4 +35,37 @@ def extract_foreground_ij(image):
 
 
 def create_graph_from_connected_points(eyes, jays):
-    raise NotImplementedError("This function is not yet implemented.")
+    """
+    Build a graph from the given set of points.
+
+    Nodes represent either endpoints (points with exactly one neighbor),
+    or junctions (points with more than two neighbors). The neighborhood
+    of a point is defined by the 8-connectivity.
+
+    Two nodes share an edge if there is a direct path between them. The
+    weight of the edge is the path length between the two nodes. The path
+    length is the sum of the Euclidean distances between adjacent points
+    along the path.
+
+    Parameters
+    ----------
+    eyes : list
+        List of row indices of the connected points.
+    jays : list
+        List of column indices of the connected points.
+
+    Returns
+    -------
+    graph : networkx.Graph
+        Graph of connected points.
+    """
+
+    graph = Graph()
+
+    # TODO: Map out the network.
+    # - Start at the first point and check out the neighborhood.
+    # - Pick a direction to walk in. Store other possible directions in a queue.
+    # - When an endpoint or a junction is encountered, add an edge (or node) to the graph.
+    # - Continue until all points have been visited (the queue is empty).
+
+    return graph
