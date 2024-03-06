@@ -68,4 +68,10 @@ def create_graph_from_connected_points(eyes, jays):
     # - When an endpoint or a junction is encountered, add an edge (or node) to the graph.
     # - Continue until all points have been visited (the queue is empty).
 
+    # Prepare the points
+    points = IndexPointCollection(eyes, jays)
+
+    # Initialize the queue that will hold pairs of starting points and directions
+    queue = []
+
     return graph
