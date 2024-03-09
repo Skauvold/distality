@@ -30,11 +30,19 @@ class IndexPointCollection:
         self.points = [IndexPoint((i, j)) for i, j in zip(row_indices, col_indices)]
 
     def neighbors(self, point):
-        return [p for p in self.points if p != point and p.is_near(point)]
+        return [p for p in self.points if p.distance_to(point) > 0 and p.is_near(point)]
 
     def other_neighbors(self, point, previous_point):
         all_neighbors = self.neighbors(point)
-        return [p for p in all_neighbors if p != previous_point]
+        return [p for p in all_neighbors if p.distance_to(previous_point) > 0]
+
+    def foward_neighbors(self, point, previous_point):
+        all_neighbors = self.neighbors(point)
+        return [
+            p
+            for p in all_neighbors
+            if p != previous_point and p not in self.neighbors(previous_point)
+        ]
 
     def walk_to_node(self, current_point, previous_point):
         """
@@ -63,33 +71,27 @@ class IndexPointCollection:
         # Initialize the distance walked
         distance_walked = previous_point.distance_to(current_point)
 
-        # Find other neighbors of the current point
-        other_neighbors = self.other_neighbors(current_point, previous_point)
+        # Find forward neighbors of the current point
+        forward_neighbors = self.foward_neighbors(current_point, previous_point)
 
         node_encountered = False
 
         while node_encountered == False:
             # Move to the next point
-            previous_point, current_point = current_point, other_neighbors[0]
+            previous_point, current_point = current_point, forward_neighbors[0]
 
             # Update the distance walked
             distance_walked += previous_point.distance_to(current_point)
 
-            # Find other neighbors of the current point
-            other_neighbors = self.other_neighbors(current_point, previous_point)
+            forward_neighbors = self.foward_neighbors(current_point, previous_point)
 
             # Check if we have reached a node
-            if len(other_neighbors) == 0:
+            if len(forward_neighbors) == 0:
                 node_encountered = True
                 node_type = "end"
-            elif len(other_neighbors) > 1:
-                number_of_neighbors_not_reachable_from_previous_point = 0
-                for neighbor in other_neighbors:
-                    if neighbor not in self.neighbors(previous_point):
-                        number_of_neighbors_not_reachable_from_previous_point += 1
-                if number_of_neighbors_not_reachable_from_previous_point > 1:
-                    node_encountered = True
-                    node_type = "junction"
+            elif len(forward_neighbors) > 1:
+                node_encountered = True
+                node_type = "junction"
 
         # Determine the node point and entry point
         node_point = current_point

@@ -2,7 +2,11 @@
 
 import numpy as np
 from skimage.morphology import medial_axis
-from networkx import all_pairs_shortest_path_length, Graph
+from networkx import Graph
+from networkx.algorithms.shortest_paths.generic import shortest_path
+from networkx.algorithms.shortest_paths.weighted import (
+    all_pairs_bellman_ford_path_length,
+)
 
 from pointutils import IndexPointCollection
 
@@ -104,3 +108,111 @@ def create_graph_from_connected_points(eyes, jays):
                 queue.append((node_point, neighbor))
 
     return graph
+
+
+def find_longest_path(graph):
+    """
+    Find the longest path in the graph.
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+        Graph of connected points.
+
+    Returns
+    -------
+    longest_path : list
+        List of nodes in the longest path.
+    """
+    # Compute pairwise shortest distances between all nodes in the graph
+    distances = dict(all_pairs_bellman_ford_path_length(graph, weight="weight"))
+
+    # Find the longest path
+    longest_distance = 0
+    longest_path_src_dst = []
+
+    for src, dstlist in distances.items():
+        for dst, distance in dstlist.items():
+            if distance > longest_distance:
+                longest_distance = distance
+                longest_path_src_dst = [src, dst]
+
+    # Find the longest path
+    longest_path = list(
+        shortest_path(
+            graph, source=longest_path_src_dst[0], target=longest_path_src_dst[1]
+        )
+    )
+
+    return longest_path
+
+
+def collect_points_along_path(eyes, jays, path_nodes, tolerance=1):
+    """
+    Collect the points along the longest path.
+
+    Parameters
+    ----------
+    eyes : list
+        List of row indices of the connected points.
+    jays : list
+        List of column indices of the connected points.
+    graph : networkx.Graph
+        Graph of connected points.
+    path_nodes : list
+        List of nodes in the longest path.
+    tolerance : int
+        Maximum distance between the end of the path and the last node.
+
+    Returns
+    -------
+    path_points : list
+        List of points along the path.
+
+    """
+
+    # Prepare points
+    points = IndexPointCollection(eyes, jays)
+
+    # Remove any path nodes with exactly two neighbors
+    path_nodes = [node for node in path_nodes if len(points.neighbors(node)) != 2]
+
+    # For each node in the path, find the correct direction
+    # to start walking in order to reach the next node in the path.
+    # Initialize list of path points
+    path_points = [path_nodes[0]]
+    for i in range(len(path_nodes) - 1):
+        start = path_nodes[i]
+        end = path_nodes[i + 1]
+
+        # Find the direction to start walking
+        neighbors = points.neighbors(start)
+
+        for neighbor in neighbors:
+            # Try to walk to the next node in the path
+            node_point, entry_point, node_type, distance_walked = points.walk_to_node(
+                neighbor, start
+            )
+
+            if node_point.distance_to(end) <= tolerance:
+                # Walk the path again, collecting the points
+                previous_point = start
+                current_point = neighbor
+                while current_point.distance_to(end) > tolerance:
+                    path_points.append(current_point)
+                    forward_neighbors = points.foward_neighbors(
+                        current_point, previous_point
+                    )
+                    if forward_neighbors:
+                        previous_point, current_point = (
+                            current_point,
+                            forward_neighbors[0],
+                        )
+                    else:
+                        raise ValueError("No forward neighbors found")
+                path_points.append(end)
+
+                # Since we have found the correct direction, there's no need to try the rest
+                break
+
+    return path_points
