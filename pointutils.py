@@ -66,10 +66,15 @@ class IndexPointCollection:
             The type of node encountered: 'end' or 'junction'.
         distance_walked : int
             The number of steps taken from previous_point to node_point.
+        segment: list
+            The list of points along the path.
         """
 
         # Initialize the distance walked
         distance_walked = previous_point.distance_to(current_point)
+
+        # Initialize segment
+        segment = [previous_point, current_point]
 
         # Find forward neighbors of the current point
         forward_neighbors = self.foward_neighbors(current_point, previous_point)
@@ -79,6 +84,9 @@ class IndexPointCollection:
         while node_encountered == False:
             # Move to the next point
             previous_point, current_point = current_point, forward_neighbors[0]
+
+            # Update the segment
+            segment.append(current_point)
 
             # Update the distance walked
             distance_walked += previous_point.distance_to(current_point)
@@ -97,4 +105,4 @@ class IndexPointCollection:
         node_point = current_point
         entry_point = previous_point
 
-        return node_point, entry_point, node_type, distance_walked
+        return node_point, entry_point, node_type, distance_walked, segment
