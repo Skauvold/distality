@@ -1,6 +1,8 @@
 from skimage.io import imread
 from pathlib import Path
 import matplotlib.pyplot as plt
+import networkx as nx
+
 
 from skimage.morphology import medial_axis
 
@@ -9,7 +11,7 @@ from backbone import (
     create_graph_from_connected_points,
 )
 
-path_to_image = Path("data/02_blob.png")
+path_to_image = Path("data/01_blob.png")
 original = imread(path_to_image)
 img = original[:, :, 0]
 
@@ -38,12 +40,32 @@ ax.axis("off")
 ax.set_title("Original")
 ax.plot(j_medial, i_medial, "ro")
 
-plt.show()
 
 # Step 3: Make a graph of medial axis endpoints and junctions
 # and the distances between them
 graph = create_graph_from_connected_points(i_medial, j_medial)
 
+# Visualize the graph using the networkx library
+fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+axs[0].set_title("Graph of connected points")
+nx.draw(
+    graph, ax=axs[0], node_size=10, node_color="r", edge_color="b", with_labels=True
+)
+
+# indicate the node locations on the original image
+axs[1].imshow(img, cmap="gray")
+axs[1].axis("off")
+axs[1].set_title("Original")
+axs[1].plot(j_medial, i_medial, "ro")
+
+# Get the node coordinates from the graph
+node_is = [node._row_index for node in graph.nodes]
+node_js = [node._col_index for node in graph.nodes]
+
+# Plot the node coordinates on the original image
+axs[1].plot(node_js, node_is, "bo")
+
+plt.show()
 
 # Step 4: Compute pairwise shortest distances between all pairs of endpoints
 

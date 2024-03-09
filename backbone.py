@@ -1,9 +1,10 @@
 # Find a backbone for the polygon by first finding the medial axis and then pruning it to a single linestring
 
 import numpy as np
-
 from skimage.morphology import medial_axis
 from networkx import all_pairs_shortest_path_length, Graph
+
+from pointutils import IndexPointCollection
 
 
 def extract_foreground_ij(image):
@@ -62,16 +63,44 @@ def create_graph_from_connected_points(eyes, jays):
 
     graph = Graph()
 
-    # TODO: Map out the network.
-    # - Start at the first point and check out the neighborhood.
-    # - Pick a direction to walk in. Store other possible directions in a queue.
-    # - When an endpoint or a junction is encountered, add an edge (or node) to the graph.
-    # - Continue until all points have been visited (the queue is empty).
-
     # Prepare the points
     points = IndexPointCollection(eyes, jays)
 
     # Initialize the queue that will hold pairs of starting points and directions
     queue = []
+
+    # Find starting point
+    start_point = points.points[0]
+
+    # Find neighbors of the starting point
+    neighbors = points.neighbors(start_point)
+
+    # Add an entry to the queue for each neighbor of the starting point
+    for neighbor in neighbors:
+        queue.append((start_point, neighbor))
+
+    # Add starting point to the graph
+    graph.add_node(start_point)
+
+    while queue:
+        # Get the next pair of points from the queue
+        previous_point, current_point = queue.pop(0)
+
+        # Walk until a node (endpoint or junction) is encountered
+        node_point, entry_point, node_type, distance_walked = points.walk_to_node(
+            current_point, previous_point
+        )
+
+        # Add the node to the graph
+        graph.add_node(node_point)
+
+        # Add the edge to the graph
+        graph.add_edge(previous_point, node_point, weight=distance_walked)
+
+        # If the node is a junction, add the neighbors to the queue
+        if node_type == "junction":
+            other_neighbors = points.other_neighbors(node_point, entry_point)
+            for neighbor in other_neighbors:
+                queue.append((node_point, neighbor))
 
     return graph

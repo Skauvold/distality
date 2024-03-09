@@ -1,1 +1,98 @@
-# Implement the IdexPointCollection class here
+# Implement the IndexPointCollection class here
+
+
+class IndexPoint:
+    def __init__(self, indices):
+        self._row_index = indices[0]
+        self._col_index = indices[1]
+
+    def __repr__(self) -> str:
+        return f"({self._row_index}, {self._col_index})"
+
+    def is_near(self, other_point):
+        return (
+            abs(self._row_index - other_point._row_index) <= 1
+            and abs(self._col_index - other_point._col_index) <= 1
+        )
+
+    def distance_to(self, other_point, metric="euclidean"):
+        if metric == "euclidean":
+            return (
+                (self._row_index - other_point._row_index) ** 2
+                + (self._col_index - other_point._col_index) ** 2
+            ) ** 0.5
+        else:
+            raise ValueError("Unknown metric")
+
+
+class IndexPointCollection:
+    def __init__(self, row_indices, col_indices):
+        self.points = [IndexPoint((i, j)) for i, j in zip(row_indices, col_indices)]
+
+    def neighbors(self, point):
+        return [p for p in self.points if p != point and p.is_near(point)]
+
+    def other_neighbors(self, point, previous_point):
+        all_neighbors = self.neighbors(point)
+        return [p for p in all_neighbors if p != previous_point]
+
+    def walk_to_node(self, current_point, previous_point):
+        """
+        Coming from previous_point, walk in the direction of current_point until
+        a dead end or a junction is reached.
+
+        Parameters
+        ----------
+        current_point : IndexPoint
+            The point reached by taking one step from previous_point in the given direction.
+        previous_point : IndexPoint
+            The point from which the current_point was reached.
+
+        Returns
+        -------
+        node_point : IndexPoint
+            The point where the walk ended.
+        entry_point : IndexPoint
+            The point from which the node_point was reached.
+        node_type : str
+            The type of node encountered: 'end' or 'junction'.
+        distance_walked : int
+            The number of steps taken from previous_point to node_point.
+        """
+
+        # Initialize the distance walked
+        distance_walked = previous_point.distance_to(current_point)
+
+        # Find other neighbors of the current point
+        other_neighbors = self.other_neighbors(current_point, previous_point)
+
+        node_encountered = False
+
+        while node_encountered == False:
+            # Move to the next point
+            previous_point, current_point = current_point, other_neighbors[0]
+
+            # Update the distance walked
+            distance_walked += previous_point.distance_to(current_point)
+
+            # Find other neighbors of the current point
+            other_neighbors = self.other_neighbors(current_point, previous_point)
+
+            # Check if we have reached a node
+            if len(other_neighbors) == 0:
+                node_encountered = True
+                node_type = "end"
+            elif len(other_neighbors) > 1:
+                number_of_neighbors_not_reachable_from_previous_point = 0
+                for neighbor in other_neighbors:
+                    if neighbor not in self.neighbors(previous_point):
+                        number_of_neighbors_not_reachable_from_previous_point += 1
+                if number_of_neighbors_not_reachable_from_previous_point > 1:
+                    node_encountered = True
+                    node_type = "junction"
+
+        # Determine the node point and entry point
+        node_point = current_point
+        entry_point = previous_point
+
+        return node_point, entry_point, node_type, distance_walked
