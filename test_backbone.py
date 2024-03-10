@@ -11,6 +11,7 @@ from backbone import (
     extract_foreground_ij,
     create_graph_from_connected_points,
     find_longest_path,
+    extend_to_boundary,
 )
 
 path_to_image = Path("data/01_blob.png")
@@ -80,6 +81,7 @@ axs[4].plot(node_js, node_is, "bo")
 
 # Step 4: Compute pairwise shortest distances between all nodes in the graph
 # Step 5: Identify the endpoints with the longest distance between them
+# Step 6: Form the backbone from the coordinates of the longest path
 longest_path_nodes, longest_path_points = find_longest_path(graph, segments)
 
 # Visualize the longest path
@@ -109,8 +111,23 @@ i_path = [point._row_index for point in longest_path_points]
 j_path = [point._col_index for point in longest_path_points]
 axs[6].plot(j_path, i_path, color="cyan")
 
+# Plot the first and last points in the path in a different color
+axs[6].plot(j_path[0], i_path[0], "s", color="lightgreen")
+axs[6].plot(j_path[-1], i_path[-1], "s", color="pink")
+
 plt.show()
 
-# Step 6: Extend the longest path to the boundary of the image
+# Step 7: Extend the longest path to the boundary of the image
+short_backbone = [(point._row_index, point._col_index) for point in longest_path_points]
+full_backbone = extend_to_boundary(short_backbone, img)
 
-# Step 7: Form the backbone from the coordinates of the longest path
+# Visualize the extended path
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.imshow(img, cmap="gray")
+
+# Plot the longest path on the original image
+i_path = [i for (i, j) in full_backbone]
+j_path = [j for (i, j) in full_backbone]
+ax.plot(j_path, i_path, color="cyan")
+
+plt.show()

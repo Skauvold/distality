@@ -170,3 +170,123 @@ def find_longest_path(graph, segments):
             raise ValueError("No segment found between nodes")
 
     return longest_path_nodes, longest_path_points
+
+
+def extend_to_boundary(path, image, k=10):
+    """
+    Extend the path to the edge of the foreground region in the image.
+
+    Parameters
+    ----------
+    path : list
+        List of points in the path. The path is assumed to lie inside the
+        foreground region of the image.
+    image : ndarray
+        Binary image. Foreground pixels are represented by 1s. Bckground
+        pixels are represented by 0s. There should be a contiguous region
+        of foreground pixels around the path.
+    k : int
+        Number of path points to use for estimating the direction of the
+        path at the boundary.
+
+    Returns
+    -------
+    extended_path : list
+        List of points in the extended path. The order of the pixels in the
+        original path is preserved.
+    """
+
+    # Get the first k points in the path and Find the extension backward from the start of the path
+    first_k_points = path[:k]
+    first_k_points.reverse()
+    start_extension = extend_locally(first_k_points, image)
+    start_extension.reverse()
+
+    # Get the last k points in the path and Find the extension forward from the end of the path
+    last_k_points = path[-k:]
+    end_extension = extend_locally(last_k_points, image)
+
+    # Assemble the extended path
+    extended_path = start_extension + path + end_extension
+
+
+def extend_locally(path, image):
+    """
+    Extend a path locally to the edge of the foreground region in the image.
+
+    Parameters
+    ----------
+    path : list
+        List of points in the path. The path is assumed to lie inside the
+        foreground region of the image. This should be a short, relatively
+        straight segment of the path, with a consistent direction.
+    image : ndarray
+        Binary image. Foreground pixels are represented by 1s. Bckground
+        pixels are represented by 0s. There should be a contiguous region
+        of foreground pixels around the path.
+
+    Returns
+    -------
+    extension : list
+        List of points in the extension. The extension does not include
+        the points in the original path.
+    """
+
+    # Identify the last point in the path. Then, for all other points
+    # in the path, compute the normalized displacement vector from
+    # the last point. Use the negative average displacement vector as
+    # the direction of the extension.
+    last_point = path[-1]
+    displacements = []
+    for point in path[:-1]:
+        displacement = (point[0] - last_point[0], point[1] - last_point[1])
+        norm = np.linalg.norm(displacement)
+        displacements.append((displacement[0] / norm, displacement[1] / norm))
+
+    direction = np.mean(displacements, axis=0) * -1
+
+    # Place integer-coordinate points that are close to the line
+    # and next to already-placed points until the boundary of the
+    # foreground region is reached.
+
+    boundary_reached = False
+    current_point = last_point
+    extension = []
+
+    while not boundary_reached:
+        # Find the neighbors of the current point
+        neighbors = [
+            (current_point[0] + i, current_point[1] + j)
+            for i in range(-1, 2)
+            for j in range(-1, 2)
+            if (i, j) != (0, 0)
+        ]
+
+        # Filter out neighbors that are outside the image
+        neighbors = [
+            neighbor
+            for neighbor in neighbors
+            if 0 <= neighbor[0] < image.shape[0] and 0 <= neighbor[1] < image.shape[1]
+        ]
+
+        neighbor_cosines = []
+        for neighbor in neighbors:
+            displacement = (neighbor[0] - last_point[0], neighbor[1] - last_point[1])
+            norm = np.linalg.norm(displacement)
+            cosine = np.dot(displacement, direction) / norm
+            neighbor_cosines.append(cosine)
+
+        # Choose the neighbor with the largest cosine
+        best_neighbor = neighbors[np.argmax(neighbor_cosines)]
+
+        # Add the best neighbor to the extension
+        extension.append(best_neighbor)
+
+        # Update the current point
+        current_point = best_neighbor
+
+        # Check if the current point is on the boundary
+        if image[current_point] == 0:
+            boundary_reached = True
+
+    return extension
