@@ -115,11 +115,8 @@ axs[6].plot(j_path, i_path, color="cyan")
 axs[6].plot(j_path[0], i_path[0], "s", color="lightgreen")
 axs[6].plot(j_path[-1], i_path[-1], "s", color="pink")
 
-plt.show()
-
 # Step 7: Extend the longest path to the boundary of the image
-short_backbone = [(point._row_index, point._col_index) for point in longest_path_points]
-full_backbone = extend_to_boundary(short_backbone, img)
+full_backbone = extend_to_boundary(longest_path_points, img)
 
 # Visualize the extended path
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -128,6 +125,10 @@ ax.imshow(img, cmap="gray")
 # Plot the longest path on the original image
 i_path = [i for (i, j) in full_backbone]
 j_path = [j for (i, j) in full_backbone]
-ax.plot(j_path, i_path, color="cyan")
+ax.plot(j_path, i_path, color="green")
+
+# Plot the first and last points in the path in a different color
+ax.plot(j_path[0], i_path[0], "s", color="lightgreen")
+ax.plot(j_path[-1], i_path[-1], "s", color="pink")
 
 plt.show()

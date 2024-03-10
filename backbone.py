@@ -11,6 +11,33 @@ from networkx.algorithms.shortest_paths.weighted import (
 from pointutils import IndexPointCollection
 
 
+def backbone(image):
+    """
+    Find the backbone of a binary image.
+
+    Parameters
+    ----------
+    image : ndarray
+        Binary image. Foreground pixels are represented by 1s. Bckground
+        pixels are represented by 0s. There should be a contiguous region
+        of foreground pixels in the image.
+
+    Returns
+    -------
+    backbone : list
+        List of points in the backbone.
+    """
+    medial = medial_axis(image)
+    i_medial, j_medial = extract_foreground_ij(medial)
+
+    graph, segments = create_graph_from_connected_points(i_medial, j_medial)
+    _, longest_path_points = find_longest_path(graph, segments)
+
+    extended_path = extend_to_boundary(longest_path_points, image)
+
+    return extended_path
+
+
 def extract_foreground_ij(image):
     """
     Find the pixel indices of the foreground of a binary image.
@@ -179,7 +206,7 @@ def extend_to_boundary(path, image, k=10):
     Parameters
     ----------
     path : list
-        List of points in the path. The path is assumed to lie inside the
+        List of IndexPoints in the path. The path is assumed to lie inside the
         foreground region of the image.
     image : ndarray
         Binary image. Foreground pixels are represented by 1s. Bckground
@@ -196,6 +223,9 @@ def extend_to_boundary(path, image, k=10):
         original path is preserved.
     """
 
+    # Convert path from IndexPoints to tuples
+    path = [(point._row_index, point._col_index) for point in path]
+
     # Get the first k points in the path and Find the extension backward from the start of the path
     first_k_points = path[:k]
     first_k_points.reverse()
@@ -208,6 +238,8 @@ def extend_to_boundary(path, image, k=10):
 
     # Assemble the extended path
     extended_path = start_extension + path + end_extension
+
+    return extended_path
 
 
 def extend_locally(path, image):
@@ -269,15 +301,28 @@ def extend_locally(path, image):
             if 0 <= neighbor[0] < image.shape[0] and 0 <= neighbor[1] < image.shape[1]
         ]
 
-        neighbor_cosines = []
+        neighbor_cosines_last = []
+        good_neighbors = []
         for neighbor in neighbors:
-            displacement = (neighbor[0] - last_point[0], neighbor[1] - last_point[1])
-            norm = np.linalg.norm(displacement)
-            cosine = np.dot(displacement, direction) / norm
-            neighbor_cosines.append(cosine)
+            displacement_current = (
+                neighbor[0] - current_point[0],
+                neighbor[1] - current_point[1],
+            )
+            norm_current = np.linalg.norm(displacement_current)
+            cosine_current = np.dot(displacement_current, direction) / norm_current
+
+            if cosine_current > 0:
+                displacement_last = (
+                    neighbor[0] - last_point[0],
+                    neighbor[1] - last_point[1],
+                )
+                norm_last = np.linalg.norm(displacement_last)
+                cosine_last = np.dot(displacement_last, direction) / norm_last
+                neighbor_cosines_last.append(cosine_last)
+                good_neighbors.append(neighbor)
 
         # Choose the neighbor with the largest cosine
-        best_neighbor = neighbors[np.argmax(neighbor_cosines)]
+        best_neighbor = good_neighbors[np.argmax(neighbor_cosines_last)]
 
         # Add the best neighbor to the extension
         extension.append(best_neighbor)
