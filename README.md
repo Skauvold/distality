@@ -30,3 +30,9 @@ parameters:
 `python .\compute_distance.py .\data\05_bend.png 30 30`
 
 ![Output image](/images/fmmtest.png)
+
+`python .\test_country.py "Croatia"`
+
+![Output image: Backbone](/images/croatia_0.png)
+![Output image: Distance fields](/images/croatia_1.png)
+![Output image: Trend parameters](/images/croatia_2.png)
