@@ -334,4 +334,9 @@ def extend_locally(path, image):
         if image[current_point] == 0:
             boundary_reached = True
 
+    # Prune the first and last points of the extension.
+    # This is required if we want to use the extended backbone
+    # as a seed set for the FMM distance transform.
+    extension = extension[1:-1]
+
     return extension
